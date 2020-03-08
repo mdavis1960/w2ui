@@ -34,11 +34,13 @@ var w2obj = w2obj || {}; // expose object to be able to overwrite default functi
 *   - color.html
 *   - refactored w2tag object, it has more potential with $().data('w2tag')
 *   - w2tag options.hideOnFocus
+*   - w2tag options.maxWidth
 *   - w2menu options.items... remove t/f
 *   - w2menu options.items... keepOpen t/f
 *   - w2menu options.onRemove
 *   - w2menu options.hideOnRemove
 *   - w2menu - can not nest items, item.items and item.expanded
+*   - w2menu.options.topHTML and bottomHTML
 *
 ************************************************/
 
@@ -64,7 +66,7 @@ var w2utils = (function ($) {
             "dataType"          : 'HTTPJSON', // can be HTTP, HTTPJSON, RESTFULL, RESTFULLJSON, JSON (case sensitive)
             "phrases"           : {},         // empty object for english phrases
             "dateStartYear"     : 1950,       // start year for date-picker
-            "dateEndYear"       : 2020,       // end year for date picker
+            "dateEndYear"       : 2030,       // end year for date picker
             "macButtonOrder"    : false       // if true, Yes on the right side
         },
         isBin           : isBin,
@@ -2146,6 +2148,7 @@ w2utils.event = {
             align           : 'none',   // can be none, left, right (only works for potision: top | bottom)
             left            : 0,        // delta for left coordinate
             top             : 0,        // delta for top coordinate
+            maxWidth        : null,     // max width
             style           : '',       // adition style for the tag
             css             : {},       // add css for input when tag is shown
             className       : '',       // add class bubble
@@ -2213,11 +2216,15 @@ w2utils.event = {
             } else {
                 tag.tmp.originalCSS = '';
                 if ($(tag.attachedTo).length > 0) tag.tmp.originalCSS = $(tag.attachedTo)[0].style.cssText;
+                var tagStyles = 'white-space: nowrap;'
+                if (tag.options.maxWidth && w2utils.getStrWidth(text) > tag.options.maxWidth) {
+                    tagStyles = 'width: '+ tag.options.maxWidth + 'px'
+                }
                 // insert
                 $('body').append(
                     '<div onclick="event.stopPropagation()" style="display: none;" id="w2ui-tag-'+ tag.id +'" '+
                     '       class="w2ui-tag '+ ($(tag.attachedTo).parents('.w2ui-popup, .w2ui-overlay-popup, .w2ui-message').length > 0 ? 'w2ui-tag-popup' : '') + '">'+
-                    '   <div style="margin: -2px 0px 0px -2px; white-space: nowrap;">'+
+                    '   <div style="margin: -2px 0px 0px -2px; '+ tagStyles +'">'+
                     '      <div class="w2ui-tag-body '+ tag.options.className +'" style="'+ (tag.options.style || '') +'">'+ text +'</div>'+
                     '   </div>' +
                     '</div>');
@@ -2715,7 +2722,7 @@ w2utils.event = {
         var name = '';
         if (menu === 'refresh') {
             // if not show - call blur
-            if ($.fn.w2menuOptions) name = '-' + $.fn.w2menuOptions.name;
+            if ($.fn.w2menuOptions && $.fn.w2menuOptions.name) name = '-' + $.fn.w2menuOptions.name;
             if (options.name) name = '-' + options.name;
             if ($('#w2ui-overlay'+ name).length > 0) {
                 options = $.extend($.fn.w2menuOptions, options);
@@ -2787,10 +2794,12 @@ w2utils.event = {
                     }
                     mresize();
                 } else if (typeof options.onSelect === 'function') {
+                    var tmp = items;
+                    if (typeof items == 'function') tmp = items(options.items[parentIndex])
                     options.onSelect({
                         index: index,
                         parentIndex: parentIndex,
-                        item: items[index],
+                        item: tmp[index],
                         keepOpen: keepOpen,
                         originalEvent: event
                     });
@@ -2965,13 +2974,14 @@ w2utils.event = {
 
         function getMenuHTML(items, subMenu, expanded, parentIndex) {
             if (options.spinner) {
-                return  '<table><tbody><tr><td style="padding: 5px 10px 10px 10px; text-align: center">'+
+                return  '<table><tbody><tr><td style="padding: 5px 10px 13px 10px; text-align: center">'+
                         '    <div class="w2ui-spinner" style="width: 18px; height: 18px; position: relative; top: 5px;"></div> '+
                         '    <div style="display: inline-block; padding: 3px; color: #999;">'+ w2utils.lang('Loading...') +'</div>'+
                         '</td></tr></tbody></table>';
             }
             var count        = 0;
-            var menu_html    = '<table cellspacing="0" cellpadding="0" class="'+ (subMenu ? ' sub-menu' : '') +'"><tbody>';
+            var menu_html    =  '<table cellspacing="0" cellpadding="0" class="'+ (subMenu ? ' sub-menu' : '') +'"><tbody>'
+                + (options.topHTML ? '<tr class="w2ui-disabled" style="opacity: 1"><td colspan="3">' + options.topHTML + '</td></tr>' : '');
             var img = null, icon = null;
             if (items == null) items = options.items;
             for (var f = 0; f < items.length; f++) {
@@ -3051,9 +3061,10 @@ w2utils.event = {
                 }
                 items[f] = mitem;
             }
-            if (count === 0) {
+            if (count === 0 && options.msgNoItems) {
                 menu_html += '<tr><td style="padding: 13px; color: #999; text-align: center">'+ options.msgNoItems +'</div></td></tr>';
             }
+            menu_html += (options.bottomHTML ? '<tr class="w2ui-disabled" style="opacity: 1"><td colspan="3">' + options.bottomHTML + '</td></tr>' : '');
             menu_html += "</tbody></table>";
             return menu_html;
         }

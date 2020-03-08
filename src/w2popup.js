@@ -726,7 +726,7 @@ var w2popup = {};
         focus: function () {
             var tmp = null;
             var pop = $('#w2ui-popup');
-            var sel = 'input:visible, button:visible, select:visible, textarea:visible, [contentEditable]';
+            var sel = 'input:visible, button:visible, select:visible, textarea:visible, [contentEditable], .w2ui-input';
             // clear previous blur
             $(pop).find(sel).off('.keep-focus');
             // in message or popup
@@ -1204,7 +1204,7 @@ var w2prompt = function (label, title, callBack) {
                 $('#w2ui-popup .w2ui-message .w2ui-btn').off('click.w2prompt');
                 // need to wait for message to slide up
                 setTimeout(function () {
-                    if (typeof options.callBack == 'function' && w2popup._prompt_value != null) {
+                    if (typeof options.callBack == 'function') {
                         options.callBack(w2popup._prompt_value);
                     }
                 }, 300);
@@ -1252,6 +1252,7 @@ var w2prompt = function (label, title, callBack) {
                     $('#w2ui-popup .w2ui-popup-btn#Cancel').on('click', function (event) {
                         w2popup._prompt_value = null;
                         w2popup.close();
+                        if (typeof options.callBack == 'function') options.callBack(w2popup._prompt_value);
                     });
                     $('#w2ui-popup .w2ui-popup-btn#Ok');
                     // set focus
